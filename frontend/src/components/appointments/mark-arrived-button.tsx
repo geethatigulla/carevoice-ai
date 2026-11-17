@@ -18,7 +18,7 @@ export function MarkArrivedButton({ appointment, size = 'sm' }: { appointment: A
     onSuccess: () => {
       toast.success(`${appointment.patient?.name ?? 'Patient'} marked as arrived`)
       qc.invalidateQueries({ queryKey: ['appointments'] })
-      qc.invalidateQueries({ queryKey: ['kpis'] })
+      qc.invalidateQueries({ queryKey: ['followup-queue'] })
     },
     onError: (e) => toast.error(`Couldn't mark as arrived: ${apiErrorMessage(e)}`),
   })

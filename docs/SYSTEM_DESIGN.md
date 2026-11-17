@@ -103,7 +103,7 @@ flowchart LR
 |---|---|---|
 | Dashboard | React 19, TypeScript, Vite, Tailwind v4, shadcn/ui, TanStack Query, framer-motion, Zod | Staff UI; reads via supabase-js under RLS; live via Realtime; writes via the API |
 | Backend API | FastAPI, SQLAlchemy 2 async + asyncpg, Pydantic v2, PyJWT | Auth, business rules, Policy Engine, Bolna/OpenAI integration |
-| Scheduler | APScheduler (in-process on Render via `RUN_SCHEDULER=true`; `worker.py` locally) | Poll Bolna calls, apply outcomes, summaries, release expired slot holds, close stale calls, job queue (`SELECT … FOR UPDATE SKIP LOCKED`) |
+| Scheduler | APScheduler (in-process on Render via `RUN_SCHEDULER=true`; `worker.py` locally) | Poll Bolna calls, apply outcomes, summaries, keep 14 days of slots open (hourly), release expired slot holds, close stale calls, job queue (`SELECT … FOR UPDATE SKIP LOCKED`) |
 | Voice service | Pipecat 1.11, SmallWebRTC, Silero VAD, Sarvam STT/TTS, OpenAI | Real-time browser voice agent with tool calling (local development/demo) |
 | Database | Supabase Postgres, Auth, Realtime, Storage | System of record; RLS; live change feed |
 | Telephony | Bolna | Places real outbound PSTN calls with the configured voice agent |

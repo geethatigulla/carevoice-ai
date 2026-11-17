@@ -3,14 +3,12 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 
 import { AGENT_META } from '@/lib/agents'
 import { requireSupabase } from '@/lib/supabase'
-import { istDayStart } from '@/lib/time'
 import type {
   AgentRow,
   AppointmentRow,
   CallHistoryRow,
   Department,
   DoctorRow,
-  EscalationRow,
   LiveCallRow,
   Membership,
   PatientRow,
@@ -23,8 +21,6 @@ export const queryKeys = {
   membership: ['membership'] as const,
   agents: ['agents'] as const,
   liveCalls: ['calls', 'live'] as const,
-  openEscalations: ['escalations', 'open'] as const,
-  kpis: ['kpis'] as const,
   departments: ['departments'] as const,
   doctors: ['doctors'] as const,
   slots: (dayIso: string) => ['slots', dayIso] as const,
@@ -85,69 +81,8 @@ export function useLiveCalls() {
   })
 }
 
-export function useOpenEscalations() {
-  return useQuery({
-    queryKey: queryKeys.openEscalations,
-    queryFn: async () => {
-      const { data, error } = await requireSupabase()
-        .from('escalations')
-        .select('id, priority, category, reason, status, call_id, created_at, patient:patients(name)')
-        .in('status', ['open', 'in_progress'])
-        .order('created_at', { ascending: false })
-        .limit(20)
-      if (error) throw error
-      return data as unknown as EscalationRow[]
-    },
-  })
-}
 
-export interface Kpis {
-  callsToday: number
-  callsSameTimeYesterday: number
-  appointmentsToday: number
-  checkedInToday: number
-  followUpsDueToday: number
-  openEscalations: number
-  criticalEscalations: number
-}
 
-export function useKpis() {
-  return useQuery({
-    queryKey: queryKeys.kpis,
-    refetchInterval: 5 * 60_000,
-    queryFn: async (): Promise<Kpis> => {
-      const sb = requireSupabase()
-      const now = Date.now()
-      const today = istDayStart(0, now).toISOString()
-      const tomorrow = istDayStart(1, now).toISOString()
-      const yesterday = istDayStart(-1, now).toISOString()
-      const sameTimeYesterday = new Date(now - 86_400_000).toISOString()
-      const head = { count: 'exact' as const, head: true }
-
-      const results = await Promise.all([
-        sb.from('calls').select('id', head).gte('started_at', today),
-        sb.from('calls').select('id', head).gte('started_at', yesterday).lt('started_at', sameTimeYesterday),
-        sb.from('appointments').select('id', head).gte('starts_at', today).lt('starts_at', tomorrow).in('status', [...ACTIVE_APPOINTMENT]),
-        sb.from('appointments').select('id', head).gte('starts_at', today).lt('starts_at', tomorrow).eq('status', 'checked_in'),
-        sb.from('call_tasks').select('id', head).gte('scheduled_for', today).lt('scheduled_for', tomorrow).eq('status', 'scheduled'),
-        sb.from('escalations').select('id', head).in('status', ['open', 'in_progress']),
-        sb.from('escalations').select('id', head).in('status', ['open', 'in_progress']).eq('priority', 'critical'),
-      ])
-      const failed = results.find((r) => r.error)
-      if (failed?.error) throw failed.error
-      const [c0, c1, a0, a1, f0, e0, e1] = results.map((r) => r.count ?? 0)
-      return {
-        callsToday: c0,
-        callsSameTimeYesterday: c1,
-        appointmentsToday: a0,
-        checkedInToday: a1,
-        followUpsDueToday: f0,
-        openEscalations: e0,
-        criticalEscalations: e1,
-      }
-    },
-  })
-}
 
 // ---- Directory -------------------------------------------------------------------
 

@@ -30,7 +30,7 @@ export function AppShell() {
   const [testCallOpen, setTestCallOpen] = useState(false)
 
   // Calls drive the sidebar badge and dashboard, so the shell owns this subscription.
-  useRealtimeInvalidate('calls', [queryKeys.liveCalls, queryKeys.kpis])
+  useRealtimeInvalidate('calls', [queryKeys.liveCalls, ['followup-queue']])
 
   const toggleCollapsed = useCallback(() => {
     setCollapsed((c) => {

@@ -17,9 +17,11 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.time import IST, utcnow
+from app.policy.engine import PolicyEngine, SessionContext, ToolCall
 from app.services.audit import write_audit
 from app.services.spoken_time import day_bounds, spoken
 
+POLICY = PolicyEngine()
 HOLD_MINUTES = 3
 VERIFY_MINUTES = 30
 
@@ -383,10 +385,17 @@ async def run_tool(session: AsyncSession, *, call_id: uuid.UUID, name: str, argu
         result = fail("UNKNOWN_TOOL", f"No tool named {name}.")
     elif call is None:
         result = fail("CALL_NOT_LIVE", "This call is not active.")
-    elif name not in (call.allowed or []):
-        result = fail("NOT_ALLOWED", f"Agent {call.agent_type} may not use {name}.")
-    elif tool.requires_verified_patient and not (call.verified_patient_id and call.session_valid):
-        result = fail("VERIFICATION_REQUIRED", "Verify the caller first with verify_patient (date of birth or birth year).")
+    elif not (
+        decision := POLICY.evaluate(
+            SessionContext(
+                tenant_id=str(call.tenant_id), call_id=str(call.id), agent_key=call.agent_type or "unknown",
+                allowed_tools=frozenset(call.allowed or []),
+                patient_verified=bool(call.verified_patient_id and call.session_valid),
+            ),
+            ToolCall(name, arguments, requires_verified_patient=tool.requires_verified_patient),
+        )
+    ).allowed:
+        result = fail(decision.error_code or "NOT_ALLOWED", decision.reason)
     else:
         ctx = Ctx(session, call.tenant_id, call.id, call.session_id, call.agent_type, call.verified_patient_id,
                   call.from_number, extra=call.settings or {})

@@ -6,26 +6,30 @@ backend) → fix → `git commit -m "phase N: <name>"`.
 **Resuming work:** read this file and [`ARCHITECTURE.md`](ARCHITECTURE.md), then continue with the
 first phase that is not `done`.
 
-| #  | Phase                                        | Status  |
-|----|----------------------------------------------|---------|
-| 1  | Foundation                                   | done    |
-| 2  | Database, auth, seed, data pages             | done    |
-| 3  | Tools + Policy Engine                        | partial (fast track) |
-| 4  | Voice core + browser Test Call               | partial (fast track) |
-| 5  | Real phone calls                             | todo    |
-| 6  | Reception → Appointment agent (Pipecat Flows)| todo    |
-| 7  | Call intelligence                            | todo    |
-| 8  | Live dashboard (showpiece) — MVP             | todo    |
-| 9  | Escalation + emergency + human transfer      | todo    |
-| 10 | Workflow engine                              | todo    |
-| 11 | Outbound dialer + Follow-Up agent            | todo    |
-| 12 | Knowledge base + Pre-Visit agent             | todo    |
-| 13 | Caring / Post-Discharge agent                | todo    |
-| 14 | Console Agent (for staff)                    | todo    |
-| 15 | Analytics, agent health, cost                | todo    |
-| 16 | Eval harness                                 | todo    |
-| 17 | Roles, multi-hospital, settings, import, security | todo |
-| 18 | Demo, polish, hosting                        | todo    |
+| #  | Phase                                        | Status |
+|----|----------------------------------------------|--------|
+| 1  | Foundation                                   | done |
+| 2  | Database, auth, seed, data pages             | done |
+| 3  | Tools + Policy Engine                        | done (core tools; reschedule tool + Tool Playground pending) |
+| 4  | Voice core + browser Test Call               | done (Pipecat, local only) |
+| 5  | Real phone calls                             | done via **Bolna** (outbound); Exotel/Twilio direct streaming not built |
+| 6  | Reception → Appointment agent                | partial: booking flow in the browser agent; Pipecat Flows not used |
+| 7  | Call intelligence                            | done: transcripts, recordings (Bolna links), AI summaries |
+| 8  | Live dashboard                               | done as the **Call Center** (queue, live status, call detail) |
+| 9  | Escalation + emergency + human transfer      | partial: escalations recorded; keyword detector + transfer pending |
+| 10 | Workflow engine                              | partial: follow-up queue derived from records; rules engine pending |
+| 11 | Outbound dialer + Follow-Up agent            | partial: one-click calls with purpose + live availability; auto-dialer pending |
+| 12 | Knowledge base + Pre-Visit agent             | todo |
+| 13 | Caring / Post-Discharge agent                | todo |
+| 14 | Console Agent (for staff)                    | todo |
+| 15 | Analytics, agent health, cost                | todo (cost/latency data captured per call) |
+| 16 | Eval harness                                 | todo |
+| 17 | Roles, multi-hospital, settings, import, security | partial: roles + RLS + JWT + Zod/Pydantic validation; settings UI, import, rate limiting pending |
+| 18 | Demo, polish, hosting                        | done: navy theme, deployed (Vercel + Render), docs |
+
+**Current state (Nov 2026):** the product is the Call Center prototype described in the README —
+calls patients from hospital records via Bolna, offers live doctor availability, books/reschedules
+from the call, and returns summary, transcript and recording. See `docs/SYSTEM_DESIGN.md`.
 
 ---
 
@@ -100,7 +104,7 @@ updated, JWT verification added.
 
 ---
 
-## Fast track (demo slice of Phases 3, 4 and 6) · awaiting voice test
+## Fast track (demo slice of Phases 3, 4 and 6) · done
 
 Built under time pressure to reach a working demo; the remaining parts of Phases 3/4/6 are listed below.
 
@@ -123,3 +127,18 @@ Built under time pressure to reach a working demo; the remaining parts of Phases
 **Not yet (remaining from Phases 3/4/6)**: parse_spoken_time, reschedule_appointment, rapidfuzz +
 indic-transliteration matching, Tool Playground page, pytest for tool rules, per-turn latency to
 call_metrics, Pipecat Flows handoff, silence/DTMF handling.
+
+---
+
+## Call Center pivot (Bolna phone calls) · done
+
+- **Outbound phone calls via Bolna** (`app/providers/bolna.py`, `app/services/outbound.py`): the backend
+  starts the call with `user_data` (patient, appointment, purpose, live availability `S1…Sn`); the
+  scheduler polls `GET /executions/{id}` every 4 s and mirrors status, transcript, recording, cost.
+- **Post-call booking** (`app/services/post_call.py`): OpenAI JSON-mode extraction validated by the
+  Pydantic `CallDecision`; booking/rescheduling/confirming done in code with the same rules.
+- **AI summaries** for every finished call with a conversation (`app/services/summaries.py`).
+- **Call Center UI**: follow-up queue from records (reminders, missed, post-visit), one-click calls,
+  recent calls, call detail drawer (booking card, offered slots, summary, recording, transcript).
+- **Navy/white theme**, unfinished pages removed from navigation, Zod validation in the browser.
+- **Deployment**: Vercel (frontend) + Render (backend with in-process scheduler), see `docs/DEPLOY.md`.

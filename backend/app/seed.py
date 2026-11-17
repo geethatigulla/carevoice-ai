@@ -362,17 +362,20 @@ async def _seed_appointments(db: AsyncSession, tenant_id: uuid.UUID) -> int:
 
 
 async def _seed_history(db: AsyncSession, tenant_id: uuid.UUID) -> int:
-    """Previous hospital records for the follow-up queue: recent completed visits and missed appointments,
-    plus an appointment tomorrow for patient #1 (the test phone) so reminder calls have real details."""
-    if (await db.execute(text("select count(*) from public.appointments where tenant_id = :t and source = 'seed' "
-                              "and status in ('completed', 'no_show')"), {"t": tenant_id})).scalar_one():
-        return 0
-    rng = random.Random(11)
+    """Recent hospital records for the follow-up queue: completed visits (last 6 days) and missed
+    appointments (last 5 days), plus an upcoming appointment for patient #1 (the test phone) so reminder
+    calls have real details. Re-running the seed later rolls these forward to the current date."""
+    recent = (await db.execute(text(
+        "select count(*) from public.appointments where tenant_id = :t and source = 'seed' "
+        "and status in ('completed', 'no_show') and starts_at > now() - interval '5 days'"), {"t": tenant_id})).scalar_one()
+    rng = random.Random(utcnow().astimezone(IST).date().toordinal())
     patients = (await db.execute(text("select id, mrn from public.patients where tenant_id = :t order by mrn"), {"t": tenant_id})).all()
     doctors = (await db.execute(text("select d.id, d.slot_minutes, dp.name from public.doctors d join public.departments dp "
                                      "on dp.id = d.department_id where d.tenant_id = :t order by d.name"), {"t": tenant_id})).all()
     today = utcnow().astimezone(IST).date()
-    plan = [(p, "completed", rng.randint(1, 6)) for p in patients[1:9]] + [(p, "no_show", rng.randint(1, 5)) for p in patients[9:14]]
+    plan = [] if recent else (
+        [(p, "completed", rng.randint(1, 6)) for p in patients[1:9]] + [(p, "no_show", rng.randint(1, 5)) for p in patients[9:14]]
+    )
     made = 0
     for n, ((pid, _mrn), status, days_ago) in enumerate(plan):
         doc_id, slot_min, dept = doctors[n % len(doctors)]

@@ -15,8 +15,6 @@
     "db:link": "supabase link",
     "db:push": "supabase db push",
     "db:seed": "node scripts/py.mjs backend -m app.seed",
-    "demo:reset": "node scripts/pending.mjs 18 demo:reset",
-    "eval": "node scripts/pending.mjs 16 eval",
     "test": "node scripts/py.mjs backend -m pytest -q"
   },
   "devDependencies": {

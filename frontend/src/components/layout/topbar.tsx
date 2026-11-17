@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Building2, LogOut, Menu, Moon, PhoneCall, Search, Sparkles, Sun, type LucideIcon } from 'lucide-react'
+import { Building2, LogOut, Menu, Moon, PhoneCall, Search, Sun } from 'lucide-react'
 
 import { IstClock } from '@/components/layout/ist-clock'
 import { SystemStatus } from '@/components/layout/system-status'
@@ -13,7 +13,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useMembership } from '@/hooks/use-data'
 import { useAuth } from '@/providers/auth-context'
 import { useTheme } from '@/providers/theme-context'
@@ -66,30 +65,6 @@ function UserMenu() {
   )
 }
 
-/** A primary action that exists in the shell but is switched on by a later phase. */
-function PendingAction({ icon: Icon, label, hint, variant }: { icon: LucideIcon; label: string; hint: string; variant: 'default' | 'ai' }) {
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        {/* span wrapper: disabled buttons don't fire pointer events, so the tooltip needs a host */}
-        <span tabIndex={0} aria-label={`${label} (${hint})`} className="rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring/50">
-          <Button
-            size="sm"
-            disabled
-            variant={variant === 'ai' ? 'outline' : 'default'}
-            className={variant === 'ai' ? 'pointer-events-none border-ai/30 text-ai dark:border-ai/30' : 'pointer-events-none'}
-          >
-            <Icon /> <span className="hidden xl:inline">{label}</span>
-          </Button>
-        </span>
-      </TooltipTrigger>
-      <TooltipContent>
-        {label} · {hint}
-      </TooltipContent>
-    </Tooltip>
-  )
-}
-
 interface TopbarProps {
   onOpenMobileNav: () => void
   onOpenCommand: () => void
@@ -125,8 +100,6 @@ export function Topbar({ onOpenMobileNav, onOpenCommand, onOpenTestCall }: Topba
         </Button>
 
         <SystemStatus />
-
-        <PendingAction icon={Sparkles} label="Ask CareVoice" hint="arrives with the Console agent" variant="ai" />
         <Button size="sm" onClick={onOpenTestCall}>
           <PhoneCall /> <span className="hidden xl:inline">Test Call</span>
         </Button>

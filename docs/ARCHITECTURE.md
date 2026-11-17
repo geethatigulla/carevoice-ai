@@ -139,27 +139,29 @@ Emergencies (chest pain, breathing difficulty, heavy bleeding, unconsciousness, 
 ```
 backend/
   app/
-    api/            FastAPI routers (health, …)
-    core/           settings, logging, time helpers
+    api/            FastAPI routers: health, auth (JWT), appointments, calls, internal (voice service)
+    core/           settings, logging, time, phone helpers
     db/             async engine/session, declarative base + column mixins
     models/         ORM models mirroring supabase/migrations
-    policy/         Policy Engine
-    providers/      telephony / speech / llm interfaces + implementations
-    services/       business logic (supabase_admin, …)
-    jobs/           Postgres job queue (SKIP LOCKED)
-    seed.py         idempotent configuration seed
-  worker.py         APScheduler process
+    policy/         Policy Engine (agent permission + caller verification gate)
+    providers/      Bolna, telephony / speech / LLM interfaces + implementations
+    services/       tools, outbound calls, availability, post-call booking, summaries, slots, audit
+    jobs/           scheduler (APScheduler jobs) + Postgres job queue (SKIP LOCKED)
+    seed.py         idempotent demo-hospital seed
+  worker.py         standalone scheduler process (local); RUN_SCHEDULER=true runs it inside the API
   tests/            pytest suite (`npm test`)
 voice/
-  main.py           pipecat voice service (placeholder until Phase 4)
+  main.py           voice service: WebRTC signalling (/api/offer)
+  bot.py            Pipecat pipeline: Sarvam STT → OpenAI LLM (tools via backend) → Sarvam TTS
 frontend/
   src/
     components/signature/   design-system signature components
     components/layout/      app shell (sidebar, topbar, command palette)
-    components/dashboard/   dashboard panels
+    components/calls/       call detail drawer (summary, recording, transcript, timeline)
+    components/…            appointments calendar, patient drawer, test-call panel
     hooks/                  data hooks (TanStack Query + Realtime)
-    lib/                    supabase client, api client, time, env
-    pages/
+    lib/                    supabase client, Zod schemas, API client, env, time
+    pages/                  Call Center, Call Records, Patients, Appointments, Doctors, Agents, Login
 supabase/
   migrations/       SQL migrations — the source of truth for the schema
 docs/

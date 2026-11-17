@@ -43,17 +43,6 @@ export interface LiveCallRow {
   patient: { name: string } | null
 }
 
-export interface EscalationRow {
-  id: string
-  priority: Priority
-  category: string
-  reason: string
-  status: 'open' | 'in_progress' | 'resolved'
-  call_id: string | null
-  created_at: string
-  patient: { name: string } | null
-}
-
 export interface Department {
   id: string
   name: string

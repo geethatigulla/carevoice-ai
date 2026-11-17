@@ -5,7 +5,7 @@ running the scheduler in more than one process is safe but wasteful — enable i
 import logging
 import os
 import socket
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlalchemy import text
@@ -13,6 +13,7 @@ from sqlalchemy import text
 from app.db.session import DatabaseNotConfigured, get_sessionmaker
 from app.jobs.queue import release_stale_jobs, run_due_jobs
 from app.services.outbound import sync_bolna_calls
+from app.services.slots import ensure_slots
 from app.services.summaries import summarize_finished_calls
 
 log = logging.getLogger("carevoice.worker")
@@ -87,6 +88,19 @@ async def summarize() -> None:
 
 
 
+async def keep_slots_ahead() -> None:
+    """Keep a rolling 14 days of open appointment slots for every hospital (idempotent)."""
+    try:
+        async with get_sessionmaker()() as db:
+            for (tenant_id,) in (await db.execute(text("select id from public.tenants"))).all():
+                created = await ensure_slots(db, tenant_id)
+                await db.commit()
+                if created:
+                    log.info("generated %d new slot(s) for tenant %s", created, tenant_id)
+    except Exception as e:  # noqa: BLE001
+        _warn_once("slots", "slot generation failed: %s: %s", type(e).__name__, e)
+
+
 def build_scheduler() -> AsyncIOScheduler:
     scheduler = AsyncIOScheduler(timezone="UTC")
     scheduler.add_job(drain_job_queue, "interval", seconds=5, id="drain_job_queue", max_instances=1, coalesce=True)
@@ -94,4 +108,6 @@ def build_scheduler() -> AsyncIOScheduler:
     scheduler.add_job(housekeeping, "interval", seconds=30, id="housekeeping", max_instances=1, coalesce=True)
     scheduler.add_job(sync_outbound, "interval", seconds=4, id="sync_outbound", max_instances=1, coalesce=True)
     scheduler.add_job(summarize, "interval", seconds=10, id="summarize", max_instances=1, coalesce=True)
+    scheduler.add_job(keep_slots_ahead, "interval", hours=1, id="keep_slots_ahead", max_instances=1, coalesce=True,
+                      next_run_time=datetime.now(timezone.utc))  # also once at startup
     return scheduler

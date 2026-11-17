@@ -16,7 +16,6 @@ import DoctorsPage from '@/pages/doctors'
 import LoginPage from '@/pages/login'
 import NotFoundPage from '@/pages/not-found'
 import PatientsPage from '@/pages/patients'
-import { SectionPage } from '@/pages/section-page'
 import { useAuth } from '@/providers/auth-context'
 import { AuthProvider } from '@/providers/auth-provider'
 import { ThemeProvider } from '@/providers/theme-provider'
@@ -53,19 +52,11 @@ export default function App() {
                 <Route element={<RequireAuth />}>
                   <Route element={<AppShell />}>
                     <Route index element={<DashboardPage />} />
-                    <Route path="live-calls" element={<SectionPage section="liveCalls" />} />
                     <Route path="agents" element={<AgentsPage />} />
                     <Route path="patients" element={<PatientsPage />} />
                     <Route path="doctors" element={<DoctorsPage />} />
                     <Route path="appointments" element={<AppointmentsPage />} />
-                    <Route path="follow-ups" element={<SectionPage section="followUps" />} />
-                    <Route path="tasks" element={<SectionPage section="tasks" />} />
-                    <Route path="escalations" element={<SectionPage section="escalations" />} />
                     <Route path="call-records" element={<CallRecordsPage />} />
-                    <Route path="analytics" element={<SectionPage section="analytics" />} />
-                    <Route path="knowledge" element={<SectionPage section="knowledge" />} />
-                    <Route path="workflows" element={<SectionPage section="workflows" />} />
-                    <Route path="settings" element={<SectionPage section="settings" />} />
                     {DesignPreviewPage && (
                       <Route
                         path="design"

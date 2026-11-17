@@ -80,7 +80,7 @@ export default function AppointmentsPage() {
   const doctors = useDoctors()
   const departments = useDepartments()
   const appts = useDayAppointments(day)
-  useRealtimeInvalidate('appointments', [['appointments'], ['kpis']])
+  useRealtimeInvalidate('appointments', [['appointments'], ['followup-queue']])
 
   const doctorsInDept = (doctors.data ?? []).filter((d) => dept === 'all' || d.department?.id === dept)
   const doctorIds = new Set(doctorsInDept.map((d) => d.id))
